@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31005.135
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Physics_RT", "Physics_RT\Physics_RT.vcxproj", "{1A4973DA-2079-45C2-AC30-A4FC6008CC3D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1A4973DA-2079-45C2-AC30-A4FC6008CC3D}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{1A4973DA-2079-45C2-AC30-A4FC6008CC3D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1A4973DA-2079-45C2-AC30-A4FC6008CC3D}.Debug|Win32.Build.0 = Debug|Win32
+		{1A4973DA-2079-45C2-AC30-A4FC6008CC3D}.Debug|x64.ActiveCfg = Debug|x64
+		{1A4973DA-2079-45C2-AC30-A4FC6008CC3D}.Debug|x64.Build.0 = Debug|x64
+		{1A4973DA-2079-45C2-AC30-A4FC6008CC3D}.Release|Any CPU.ActiveCfg = Release|Win32
+		{1A4973DA-2079-45C2-AC30-A4FC6008CC3D}.Release|Win32.ActiveCfg = Release|Win32
+		{1A4973DA-2079-45C2-AC30-A4FC6008CC3D}.Release|Win32.Build.0 = Release|Win32
+		{1A4973DA-2079-45C2-AC30-A4FC6008CC3D}.Release|x64.ActiveCfg = Release|x64
+		{1A4973DA-2079-45C2-AC30-A4FC6008CC3D}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E5B4B531-A323-42BC-B6F5-CC07C2C33AD6}
+	EndGlobalSection
+EndGlobal
