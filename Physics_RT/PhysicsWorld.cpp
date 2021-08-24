@@ -41,7 +41,7 @@ sPhysicsWorld* CreatePhysicsWorld(spVec3 gravity, int solverIterationCount, floa
 		worldInfo.m_gravity = hkVector4(gravity->x, gravity->y, gravity->z);
 		worldInfo.m_solverIterations = solverIterationCount;
 		worldInfo.m_collisionTolerance = collisionTolerance;
-		worldInfo.m_contactRestingVelocity = gravity->y <= -50 ? 10 : 1;
+		worldInfo.m_contactRestingVelocity = (hkReal)(gravity->y <= -50 ? 10 : 1);
 		worldInfo.m_fireCollisionCallbacks = true;
 		worldInfo.m_simulationType = bContinuous ? 
 			(initStruct.mulithread ? hkpWorldCinfo::SIMULATION_TYPE_MULTITHREADED : hkpWorldCinfo::SIMULATION_TYPE_CONTINUOUS) : 

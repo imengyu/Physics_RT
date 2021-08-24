@@ -78,6 +78,7 @@ sPhysicsRigidbodyMassProperties* ComputeShapeVolumeMassProperties(sPhysicsShape*
 }
 
 sPhysicsRigidbody* CreateRigidBody(sPhysicsWorld* world, sPhysicsShape* shape, spVec3 position, spVec4 rotation,
+	char*name,
 	int motionType, int qualityType, float friction, float restitution, float mass, int active, 
 	int layer, int systemGroup, int subSystemId, int subSystemDontCollideWith, 
 	int isTiggerVolume, int addContactListener,
@@ -108,6 +109,7 @@ sPhysicsRigidbody* CreateRigidBody(sPhysicsWorld* world, sPhysicsShape* shape, s
 	info.m_friction = friction;
 	info.m_restitution = restitution;
 	info.m_mass = mass;
+	info.m_collisionFilterInfo = hkpGroupFilter::calcFilterInfo((layer >= 0 && layer < 32) ? layer : 0, systemGroup, subSystemId, subSystemDontCollideWith);
 	info.m_angularVelocity = hkVector4(angularVelocity->x, angularVelocity->y, angularVelocity->z);
 	info.m_linearVelocity = hkVector4(linearVelocity->x, linearVelocity->y, linearVelocity->z);
 
@@ -135,10 +137,10 @@ sPhysicsRigidbody* CreateRigidBody(sPhysicsWorld* world, sPhysicsShape* shape, s
 
 	if (initStruct.mulithread) world->physicsWorld->markForWrite();
 	world->physicsWorld->addEntity(newRigidBody, active ? HK_ENTITY_ACTIVATION_DO_ACTIVATE : HK_ENTITY_ACTIVATION_DO_NOT_ACTIVATE);
-	if (layer >= 0 && layer < 32)
-		newRigidBody->setCollisionFilterInfo(hkpGroupFilter::calcFilterInfo(layer, systemGroup, subSystemId, subSystemDontCollideWith));
+
 	newRigidBody->setUserData(TestLibraryAvailability2() ? (hkUlong)body : 0);
 	newRigidBody->enableDeactivation(true);
+	newRigidBody->setName(name);
 	newRigidBody->removeReference();
 
 	if (initStruct.mulithread) world->physicsWorld->unmarkForWrite();
@@ -491,7 +493,7 @@ int GetRigidBodyCollisionFilterInfo(sPhysicsRigidbody* body)
 
 	return body->rigidBody->getCollisionFilterInfo();
 
-	TRY_END_NORET
+	TRY_END(0)
 }
 void SetRigidBodyCollisionFilterInfo(sPhysicsRigidbody* body, int layer, int systemGroup, int subSystemId, int subSystemDontCollideWith)
 {
@@ -514,7 +516,7 @@ int GetNewSystemGroup(sPhysicsWorld* world) {
 		
 	return ((hkpGroupFilter*)world->physicsWorld->getCollisionFilter())->getNewSystemGroup();
 
-	TRY_END_NORET
+	TRY_END(0)
 } 
 void* CreateSpringAction(sPhysicsWorld* world, sPhysicsRigidbody* body1, sPhysicsRigidbody* body2, spVec3 position1, spVec3 position2, float springConstant, float springDamping, float springRestLength) {
 	TRY_BEGIN
@@ -533,7 +535,7 @@ void* CreateSpringAction(sPhysicsWorld* world, sPhysicsRigidbody* body1, sPhysic
 
 	return spring;
 
-	TRY_END_NORET
+	TRY_END(nullptr)
 }
 void DestroySpringAction(sPhysicsWorld* world, void* spring) {
 	TRY_BEGIN

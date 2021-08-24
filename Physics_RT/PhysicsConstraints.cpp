@@ -273,7 +273,7 @@ sPhysicsConstraints* CreatePulleyConstraint(sPhysicsRigidbody* body, sPhysicsRig
 
 	TRY_END(nullptr)
 }
-sPhysicsConstraints* CreatePrismaticConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 povit, spVec3 axis, sConstraintBreakData* breakable, sConstraintMotorData* motorData)
+sPhysicsConstraints* CreatePrismaticConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 povit, spVec3 axis, int allowRotationAroundAxis, float mmax, float mmin, float mag, sConstraintBreakData* breakable, sConstraintMotorData* motorData)
 {
 	TRY_BEGIN
 
@@ -284,6 +284,10 @@ sPhysicsConstraints* CreatePrismaticConstraint(sPhysicsRigidbody* body, sPhysics
 	// Create the constraint
 	auto data = new hkpPrismaticConstraintData();
 	data->setInWorldSpace(body->rigidBody->getTransform(), otherBody == nullptr ? fixedBody->getTransform() : otherBody->rigidBody->getTransform(), Vec3TohkVec4(povit), Vec3TohkVec4(axis));
+	data->setMinLinearLimit(mmin);
+	data->setMaxLinearLimit(mmax);
+	data->setMaxFrictionForce(mag);
+	data->allowRotationAroundAxis(allowRotationAroundAxis);
 
 	if (motorData) {
 		auto motor = CreateConstraintMotor(motorData);

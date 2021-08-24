@@ -21,6 +21,7 @@ struct sPhysicsRigidbodyMassProperties {
 };
 
 sPhysicsRigidbody* CreateRigidBody(sPhysicsWorld* world, sPhysicsShape* shape, spVec3 position, spVec4 rotation,
+	char* name,
 	int motionType, int qualityType, float friction, float restitution, float mass, int active, 
 	int layer, int systemGroup, int subSystemId, int subSystemDontCollideWith,
 	int isTiggerVolume, int addContactListener,
