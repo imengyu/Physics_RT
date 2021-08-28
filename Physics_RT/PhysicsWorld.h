@@ -35,8 +35,6 @@ struct sPhysicsWorld {
 
 	sPhysicsWorldCallbacks callbacks;
 	SimpleLinkedList<sPhysicsRigidbody> bodyList;
-	sPhysicsRigidbody* bodyCurrent;
-	int bodyCurrentIndex;
 };
 
 struct sRayCastResult {
@@ -55,7 +53,7 @@ void DestroyPhysicsWorld(sPhysicsWorld* world);
 void StepPhysicsWorld(sPhysicsWorld* world, float timestep);
 void SetPhysicsWorldGravity(sPhysicsWorld* world, spVec3 gravity);
 void SetPhysicsWorldCollisionLayerMasks(sPhysicsWorld* world, unsigned int layerId, unsigned int toMask, int enable, int forceUpdate);
-int ReadPhysicsWorldBodys(sPhysicsWorld* world, float* buffer, int count);
+void UpdateAllPhysicsWorldBodys(sPhysicsWorld* world);
 
 int PhysicsWorldRayCastBody(sPhysicsWorld* world, spVec3 from, spVec3 to, int rayLayer, sRayCastResult** outResult);
 int PhysicsWorldRayCastHit(sPhysicsWorld* world, spVec3 from, spVec3 to, int rayLayer, int castAll, sRayCastResult** outResult);

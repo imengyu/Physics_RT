@@ -7,10 +7,12 @@ struct sPhysicsShape;
 
 class MyCollisionResolution;
 struct sPhysicsRigidbody {
-	hkpRigidBody* rigidBody;
-	sPhysicsWorld* world;
-	unsigned int id;
+	float pos[3];
+	float rot[4];
+	int id;
 	int active;
+	sPhysicsWorld* world;
+	hkpRigidBody* rigidBody;
 	struct sPhysicsRigidbody* prev;
 	struct sPhysicsRigidbody* next;
 	MyCollisionResolution* collisionListener;

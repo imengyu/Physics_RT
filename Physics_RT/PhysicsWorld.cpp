@@ -178,12 +178,20 @@ void SetPhysicsWorldGravity(sPhysicsWorld* world, spVec3 gravity)
 {
 	TRY_BEGIN
 		CHECK_PARAM_PTR(world);
-		world->physicsWorld->setGravity(hkVector4(gravity->x, gravity->y, gravity->z));
+
+	if (initStruct.mulithread) world->physicsWorld->markForWrite();
+	
+	world->physicsWorld->setGravity(hkVector4(gravity->x, gravity->y, gravity->z));
+
+
+	if (initStruct.mulithread) world->physicsWorld->unmarkForWrite();
 	TRY_END_NORET
 }
 void SetPhysicsWorldCollisionLayerMasks(sPhysicsWorld* world, unsigned int layerId, unsigned int toMask, int enable, int forceUpdate) {
 	TRY_BEGIN
 		CHECK_PARAM_PTR(world);
+
+	if (initStruct.mulithread) world->physicsWorld->markForWrite();
 		
 	if (enable)
 		world->filter->enableCollisionsUsingBitfield(1 << layerId, toMask);
@@ -192,6 +200,8 @@ void SetPhysicsWorldCollisionLayerMasks(sPhysicsWorld* world, unsigned int layer
 
 	if (forceUpdate)
 		world->physicsWorld->updateCollisionFilterOnWorld(HK_UPDATE_FILTER_ON_WORLD_FULL_CHECK, HK_UPDATE_COLLECTION_FILTER_PROCESS_SHAPE_COLLECTIONS);
+
+	if (initStruct.mulithread) world->physicsWorld->unmarkForWrite();
 
 	TRY_END_NORET
 }
@@ -230,44 +240,34 @@ void StepPhysicsWorld(sPhysicsWorld* world, float timestep) {
 		hkMonitorStream::getInstance().reset();
 	}
 
-	world->bodyCurrent = world->bodyList.begin;
-	world->bodyCurrentIndex = 0;
-
 	TRY_END_NORET
 }
-int ReadPhysicsWorldBodys(sPhysicsWorld* world, float *buffer, int count)
+void UpdateAllPhysicsWorldBodys(sPhysicsWorld* world)
 {
 	TRY_BEGIN
 	CHECK_PARAM_PTR(world);
 
-	int currentCount = 0, currentPos = 0;
-	auto* ptr = world->bodyCurrent;
-	while (ptr && currentCount < count) {
+	auto* ptr = world->bodyList.begin;
+	while (ptr != nullptr) {
 
 		if (ptr->active) {
 			auto& pos = ptr->rigidBody->getPosition();
 			auto& rot = ptr->rigidBody->getRotation();
 
-			currentPos = currentCount * 8;
-			buffer[currentPos] = pos.getComponent(0);
-			buffer[currentPos + 1] = pos.getComponent(1);
-			buffer[currentPos + 2] = pos.getComponent(2);
+			ptr->pos[0] = pos.getComponent(0);
+			ptr->pos[1] = pos.getComponent(1);
+			ptr->pos[2] = pos.getComponent(2);
 
-			buffer[currentPos + 3] = rot.getComponent<0>();
-			buffer[currentPos + 4] = rot.getComponent<1>();
-			buffer[currentPos + 5] = rot.getComponent<2>();
-			buffer[currentPos + 6] = rot.getComponent<3>();
-			buffer[currentPos + 7] = (float)ptr->id;
+			ptr->rot[0] = rot.getComponent<0>();
+			ptr->rot[1] = rot.getComponent<1>();
+			ptr->rot[2] = rot.getComponent<2>();
+			ptr->rot[3] = rot.getComponent<3>();
 		}
 
-		currentCount++;
 		ptr = ptr->next;
-		world->bodyCurrent = ptr;
-		world->bodyCurrentIndex++;
 	}
-	return world->bodyList.getSize() - world->bodyCurrentIndex;
 
-	TRY_END(0)
+	TRY_END_NORET
 }
 
 void SetRayCastResult(sRayCastResult* rs, hkpWorldRayCastInput &ray, const hkpWorldRayCastOutput &result) {

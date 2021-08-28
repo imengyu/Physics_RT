@@ -388,7 +388,7 @@ void InitFunctions()
 	apiArray[i++] = DestroyPhysicsWorld;
 	apiArray[i++] = StepPhysicsWorld;
 	apiArray[i++] = SetPhysicsWorldGravity;
-	apiArray[i++] = ReadPhysicsWorldBodys;
+	apiArray[i++] = UpdateAllPhysicsWorldBodys;
 	apiArray[i++] = CreateRigidBody;
 	apiArray[i++] = ActiveRigidBody;
 	apiArray[i++] = DeactiveRigidBody;

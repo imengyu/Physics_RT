@@ -6,7 +6,7 @@
 
 extern sInitStruct initStruct;
 extern bool systemQuited;
-unsigned int sPhysicsRigidbodyId = 0;
+int sPhysicsRigidbodyId = 0;
 
 sPhysicsRigidbodyMassProperties* ComputeBoxSurfaceMassProperties(spVec4 halfExtents, float mass, float surfaceThickness) {
 	TRY_BEGIN
@@ -136,6 +136,7 @@ sPhysicsRigidbody* CreateRigidBody(sPhysicsWorld* world, sPhysicsShape* shape, s
 	hkpRigidBody* newRigidBody = new hkpRigidBody(info);
 
 	if (initStruct.mulithread) world->physicsWorld->markForWrite();
+
 	world->physicsWorld->addEntity(newRigidBody, active ? HK_ENTITY_ACTIVATION_DO_ACTIVATE : HK_ENTITY_ACTIVATION_DO_NOT_ACTIVATE);
 
 	newRigidBody->setUserData(TestLibraryAvailability2() ? (hkUlong)body : 0);
@@ -143,20 +144,20 @@ sPhysicsRigidbody* CreateRigidBody(sPhysicsWorld* world, sPhysicsShape* shape, s
 	newRigidBody->setName(name);
 	newRigidBody->removeReference();
 
+	if (isTiggerVolume)
+		(new MyTriggerVolume(body))->removeReference();
+
+	if (addContactListener) {
+		body->collisionListener = new MyCollisionResolution(world);
+		newRigidBody->addContactListener(body->collisionListener);
+	}
+
 	if (initStruct.mulithread) world->physicsWorld->unmarkForWrite();
 
 	body->rigidBody = newRigidBody;
 	body->active = active;
 	body->world = world;
 	body->id = ++sPhysicsRigidbodyId;
-
-	if (isTiggerVolume)
-		(new MyTriggerVolume(body))->removeReference();
-
-	if (addContactListener) {
-		body->collisionListener = new MyCollisionResolution(world);
-		body->rigidBody->addContactListener(body->collisionListener);
-	}
 
 	world->bodyList.add(body);
 	return body;
@@ -171,14 +172,15 @@ void DestroyRigidBody(sPhysicsRigidbody* body)
 		if (body->world->physicsWorld) {
 
 			if (initStruct.mulithread) body->world->physicsWorld->markForWrite();
-			body->world->physicsWorld->removeEntity(body->rigidBody);
-			if (initStruct.mulithread) body->world->physicsWorld->unmarkForWrite();
 
 			if (body->collisionListener) {
 				body->rigidBody->removeContactListener(body->collisionListener);
 				delete body->collisionListener;
 				body->collisionListener = nullptr;
 			}
+			body->world->physicsWorld->removeEntity(body->rigidBody);
+
+			if (initStruct.mulithread) body->world->physicsWorld->unmarkForWrite();
 		}
 
 		body->world->bodyList.remove(body);
@@ -522,7 +524,9 @@ void* CreateSpringAction(sPhysicsWorld* world, sPhysicsRigidbody* body1, sPhysic
 	TRY_BEGIN
 		CHECK_PARAM_PTR(world)
 		CHECK_PARAM_PTR(body1)
-		
+
+	if (initStruct.mulithread) world->physicsWorld->markForWrite();
+
 	hkpRigidBody* fixedBody = world->physicsWorld->getFixedRigidBody();
 	auto otherBody = body1 == nullptr ? fixedBody : body1->rigidBody;
 
@@ -533,6 +537,8 @@ void* CreateSpringAction(sPhysicsWorld* world, sPhysicsRigidbody* body1, sPhysic
 	spring->setRestLength(springRestLength);
 	world->physicsWorld->addAction(spring)->removeReference();
 
+	if (initStruct.mulithread) world->physicsWorld->unmarkForWrite();
+
 	return spring;
 
 	TRY_END(nullptr)
@@ -542,7 +548,11 @@ void DestroySpringAction(sPhysicsWorld* world, void* spring) {
 		CHECK_PARAM_PTR(world)
 		CHECK_PARAM_PTR(spring)
 
+	if (initStruct.mulithread) world->physicsWorld->markForWrite();
+
 	world->physicsWorld->removeAction((hkpSpringAction*)spring);
+
+	if (initStruct.mulithread) world->physicsWorld->unmarkForWrite();
 
 	TRY_END_NORET
 }

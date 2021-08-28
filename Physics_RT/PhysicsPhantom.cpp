@@ -20,6 +20,8 @@ sPhysicsPhantom* CreateAabbPhantom(sPhysicsWorld* world, spVec3 m_min, spVec3 m_
 
 	hkAabb aabb(Vec3TohkVec4(m_min), Vec3TohkVec4(m_max));
 
+	if (initStruct.mulithread) world->physicsWorld->markForWrite();
+
 	sPhysicsPhantom* s = new sPhysicsPhantom();
 	s->world = world;
 	s->id = sPhantomId++;
@@ -33,6 +35,8 @@ sPhysicsPhantom* CreateAabbPhantom(sPhysicsWorld* world, spVec3 m_min, spVec3 m_
 	}
 	world->physicsWorld->addPhantom(s->phantom);
 	s->phantom->removeReference();
+
+	if (initStruct.mulithread) world->physicsWorld->unmarkForWrite();
 
 	return s;
 

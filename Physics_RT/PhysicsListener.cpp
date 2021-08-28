@@ -8,7 +8,7 @@ MyBreakableListener::MyBreakableListener(sPhysicsWorld* world)
 }
 void MyBreakableListener::constraintBreakingCallback(hkpBreakableConstraintEvent& event)
 {
-    if (world->callbacks.onConstraintBreakingCallback) {
+    if (world->callbacks.onConstraintBreakingCallback && event.m_constraintInstance) {
         auto s = (sPhysicsConstraints*)event.m_constraintInstance->getUserData();
         world->callbacks.onConstraintBreakingCallback(s, s->id, event.m_forceMagnitude, event.m_removed);
     }
@@ -25,13 +25,15 @@ void MyCollisionResolution::collisionRemovedCallback(const hkpCollisionEvent& ev
 {
     auto source = event.getBody(0);
     auto other = event.getBody(1);
-    auto body = (sPhysicsRigidbody*)source->getUserData();
-    auto bodyOther = (sPhysicsRigidbody*)other->getUserData();
-    if (world && world->physicsWorld && body && bodyOther) {
-        
-        sPhysicsBodyContactData data = { 0 };
-        data.isRemoved = 1;
-        world->callbacks.onBodyContactEventCallback(body, bodyOther, body->id, bodyOther->id, &data);
+    if (source && other) {
+        auto body = (sPhysicsRigidbody*)source->getUserData();
+        auto bodyOther = (sPhysicsRigidbody*)other->getUserData();
+        if (world && world->physicsWorld && body && bodyOther) {
+
+            sPhysicsBodyContactData data = { 0 };
+            data.isRemoved = 1;
+            world->callbacks.onBodyContactEventCallback(body, bodyOther, body->id, bodyOther->id, &data);
+        }
     }
 }
 void MyCollisionResolution::contactPointCallback(const hkpContactPointEvent& event)
@@ -40,27 +42,29 @@ void MyCollisionResolution::contactPointCallback(const hkpContactPointEvent& eve
     {
         auto source = event.getBody(0);
         auto other = event.getBody(1);
-        auto body = (sPhysicsRigidbody*)source->getUserData();
-        auto bodyOther = (sPhysicsRigidbody*)other->getUserData();
-        if (world && world->physicsWorld && body && bodyOther) {
-            auto& pos = event.m_contactPoint->getPosition();
-            auto& normal = event.m_contactPoint->getNormal();
-            auto& snormal = event.m_contactPoint->getSeparatingNormal();
+        if (source && other) {
+            auto body = (sPhysicsRigidbody*)source->getUserData();
+            auto bodyOther = (sPhysicsRigidbody*)other->getUserData();
+            if (world && world->physicsWorld && body && bodyOther) {
+                auto& pos = event.m_contactPoint->getPosition();
+                auto& normal = event.m_contactPoint->getNormal();
+                auto& snormal = event.m_contactPoint->getSeparatingNormal();
 
-            sPhysicsBodyContactData data = { 0 };
-            data.distance = event.m_contactPoint->getDistance();
-            data.separatingVelocity = event.getSeparatingVelocity();
-            data.pos[0] = pos.getComponent<0>();
-            data.pos[1] = pos.getComponent<1>();
-            data.pos[2] = pos.getComponent<2>();
-            data.normal[0] = normal.getComponent<0>();
-            data.normal[1] = normal.getComponent<1>();
-            data.normal[2] = normal.getComponent<2>();
-            data.separatingNormal[0] = snormal.getComponent<0>();
-            data.separatingNormal[1] = snormal.getComponent<1>();
-            data.separatingNormal[2] = snormal.getComponent<2>();
+                sPhysicsBodyContactData data = { 0 };
+                data.distance = event.m_contactPoint->getDistance();
+                data.separatingVelocity = event.getSeparatingVelocity();
+                data.pos[0] = pos.getComponent<0>();
+                data.pos[1] = pos.getComponent<1>();
+                data.pos[2] = pos.getComponent<2>();
+                data.normal[0] = normal.getComponent<0>();
+                data.normal[1] = normal.getComponent<1>();
+                data.normal[2] = normal.getComponent<2>();
+                data.separatingNormal[0] = snormal.getComponent<0>();
+                data.separatingNormal[1] = snormal.getComponent<1>();
+                data.separatingNormal[2] = snormal.getComponent<2>();
 
-            world->callbacks.onBodyContactEventCallback(body, bodyOther, body->id, bodyOther->id, &data);
+                world->callbacks.onBodyContactEventCallback(body, bodyOther, body->id, bodyOther->id, &data);
+            }
         }
     }
 }
@@ -74,14 +78,14 @@ void MyTriggerVolume::triggerEventCallback(hkpRigidBody* otherBody, EventType ty
 {
     if (type & ENTERED_EVENT)
     {
-        if (world->callbacks.onBodyTriggerEeventCallback) {
+        if (otherBody && world->callbacks.onBodyTriggerEeventCallback) {
             auto sotherBody = (sPhysicsRigidbody*)otherBody->getUserData();
             world->callbacks.onBodyTriggerEeventCallback(body, sotherBody, body->id, sotherBody->id, 1);
         }
     }
     if (type & LEFT_EVENT)
     {
-        if (world->callbacks.onBodyTriggerEeventCallback) {
+        if (otherBody && world->callbacks.onBodyTriggerEeventCallback) {
             auto sotherBody = (sPhysicsRigidbody*)otherBody->getUserData();
             world->callbacks.onBodyTriggerEeventCallback(body, sotherBody, body->id, sotherBody->id, 0);
         }
@@ -95,7 +99,10 @@ MyPhantomOverlapListener::MyPhantomOverlapListener(sPhysicsWorld* world)
 void MyPhantomOverlapListener::collidableAddedCallback(const hkpCollidableAddedEvent& event)
 {
     auto phantom = (sPhysicsPhantom*)event.m_phantom->getUserData();
-    auto bodyOther = (sPhysicsRigidbody*)(hkpGetRigidBody(event.m_collidable)->getUserData());
+    auto body = hkpGetRigidBody(event.m_collidable);
+    if (!body)
+        return;
+    auto bodyOther = (sPhysicsRigidbody*)(body->getUserData());
     if (world && world->physicsWorld && phantom && bodyOther) {
 
         sPhysicsBodyContactData data = { 0 };
@@ -106,7 +113,11 @@ void MyPhantomOverlapListener::collidableAddedCallback(const hkpCollidableAddedE
 void MyPhantomOverlapListener::collidableRemovedCallback(const hkpCollidableRemovedEvent& event)
 {
     auto phantom = (sPhysicsPhantom*)event.m_phantom->getUserData();
-    auto bodyOther = (sPhysicsRigidbody*)(hkpGetRigidBody(event.m_collidable)->getUserData());
+    auto body = hkpGetRigidBody(event.m_collidable);
+    if (!body) 
+        return;
+
+    auto bodyOther = (sPhysicsRigidbody*)(body->getUserData());
     if (world && world->physicsWorld && phantom && bodyOther) {
 
         sPhysicsBodyContactData data = { 0 };

@@ -32,6 +32,7 @@ void DestroyWorldConstraintListener(sPhysicsWorld* world) {
 
 int sPhysicsConstraintsId = 0;
 extern bool systemQuited;
+extern sInitStruct initStruct;
 
 void CreateConstraintCheck(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody) {
 	CHECK_PARAM_PTR(body);
@@ -41,8 +42,10 @@ void CreateConstraintCheck(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody
 	if (otherBody != nullptr && body->world->physicsWorld != otherBody->world->physicsWorld)
 		throw std::exception("Two bodies belong to different worlds");
 }
-sPhysicsConstraints* CreateConstraint(sPhysicsWorld *world, hkpRigidBody* body, hkpRigidBody* otherBody, hkpConstraintData* data, sConstraintBreakData* breakable) {
+sPhysicsConstraints* CreateConstraint(sPhysicsWorld *world, hkpRigidBody* body, hkpRigidBody* otherBody, hkpConstraintData* data, sConstraintBreakData* breakable, int priority, const char* typeName) {
 	auto rs = new sPhysicsConstraints();
+
+	if (initStruct.mulithread) world->physicsWorld->markForWrite();
 
 	if (breakable) {
 
@@ -57,8 +60,17 @@ sPhysicsConstraints* CreateConstraint(sPhysicsWorld *world, hkpRigidBody* body, 
 	}
 	else {
 		rs->instance = world->physicsWorld->createAndAddConstraintInstance(body, otherBody, data);
+		rs->instance->setPriority((hkpConstraintInstance::ConstraintPriority)priority);
 	}
 
+	if (initStruct.mulithread) world->physicsWorld->unmarkForWrite();
+
+	char name[256];
+	const char* bodyName = body->getName() ? body->getName() : "(null)";
+	const char* otherBodyName = otherBody->getName() ? otherBody->getName() : "(null)";
+	sprintf(name, "%sConstraintBetwen_%s_%s", typeName, bodyName, otherBodyName);
+
+	rs->instance->setName(name);
 	rs->instance->setUserData((hkUlong)rs);
 	rs->id = sPhysicsConstraintsId++;
 	rs->world = world;
@@ -140,7 +152,7 @@ void SetConstraintEnable(sPhysicsConstraints* constraint, int enable)
 
 	TRY_END_NORET
 }
-sPhysicsConstraints* CreateBallAndSocketConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 povit, sConstraintBreakData* breakable)
+sPhysicsConstraints* CreateBallAndSocketConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 povit, sConstraintBreakData* breakable, int priority)
 {
 	TRY_BEGIN
 		
@@ -152,11 +164,11 @@ sPhysicsConstraints* CreateBallAndSocketConstraint(sPhysicsRigidbody* body, sPhy
 	auto data = new hkpBallAndSocketConstraintData();
 	data->setInWorldSpace(body->rigidBody->getTransform(), otherBody == nullptr ? fixedBody->getTransform() : otherBody->rigidBody->getTransform(), Vec3TohkVec4(povit));
 
-	return CreateConstraint(body->world, body->rigidBody, otherBody == nullptr ? fixedBody : otherBody->rigidBody, data, breakable);
+	return CreateConstraint(body->world, body->rigidBody, otherBody == nullptr ? fixedBody : otherBody->rigidBody, data, breakable, priority, "BallAndSocket");
 
 	TRY_END(nullptr)
 }
-sPhysicsConstraints* CreateFixedConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 povit, sConstraintBreakData* breakable)
+sPhysicsConstraints* CreateFixedConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 povit, sConstraintBreakData* breakable, int priority)
 {
 	TRY_BEGIN
 		
@@ -171,11 +183,11 @@ sPhysicsConstraints* CreateFixedConstraint(sPhysicsRigidbody* body, sPhysicsRigi
 	tpivot.setTranslation(Vec3TohkVec4(povit));
 	data->setInWorldSpace(body->rigidBody->getTransform(), otherBody == nullptr ? fixedBody->getTransform() : otherBody->rigidBody->getTransform(), tpivot);
 
-	return CreateConstraint(body->world, body->rigidBody, otherBody == nullptr ? fixedBody : otherBody->rigidBody, data, breakable);
+	return CreateConstraint(body->world, body->rigidBody, otherBody == nullptr ? fixedBody : otherBody->rigidBody, data, breakable, priority, "Fixed");
 
 	TRY_END(nullptr)
 }
-sPhysicsConstraints* CreateStiffSpringConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 povitAW, spVec3 povitBW, float springMin, float springMax, sConstraintBreakData* breakable)
+sPhysicsConstraints* CreateStiffSpringConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 povitAW, spVec3 povitBW, float springMin, float springMax, sConstraintBreakData* breakable, int priority)
 {
 	TRY_BEGIN
 		
@@ -188,11 +200,11 @@ sPhysicsConstraints* CreateStiffSpringConstraint(sPhysicsRigidbody* body, sPhysi
 	data->setInWorldSpace(body->rigidBody->getTransform(), otherBody == nullptr ? fixedBody->getTransform() : otherBody->rigidBody->getTransform(), Vec3TohkVec4(povitAW), Vec3TohkVec4(povitBW));
 	data->setSpringLength(springMin, springMax);
 
-	return CreateConstraint(body->world, body->rigidBody, otherBody == nullptr ? fixedBody : otherBody->rigidBody, data, breakable);
+	return CreateConstraint(body->world, body->rigidBody, otherBody == nullptr ? fixedBody : otherBody->rigidBody, data, breakable, priority, "StiffSpring");
 
 	TRY_END(nullptr)
 }
-sPhysicsConstraints* CreateHingeConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 povit, spVec3 axis, sConstraintBreakData* breakable)
+sPhysicsConstraints* CreateHingeConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 povit, spVec3 axis, sConstraintBreakData* breakable, int priority)
 {
 	TRY_BEGIN
 		
@@ -204,11 +216,11 @@ sPhysicsConstraints* CreateHingeConstraint(sPhysicsRigidbody* body, sPhysicsRigi
 	auto data = new hkpHingeConstraintData();
 	data->setInWorldSpace(body->rigidBody->getTransform(), otherBody == nullptr ? fixedBody->getTransform() : otherBody->rigidBody->getTransform(), Vec3TohkVec4(povit), Vec3TohkVec4(axis));
 
-	return CreateConstraint(body->world, body->rigidBody, otherBody == nullptr ? fixedBody : otherBody->rigidBody, data, breakable);
+	return CreateConstraint(body->world, body->rigidBody, otherBody == nullptr ? fixedBody : otherBody->rigidBody, data, breakable, priority, "Hinge");
 
 	TRY_END(nullptr)
 }
-sPhysicsConstraints* CreateLimitedHingeConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 povit, spVec3 axis, float agularLimitMin, float agularLimitMax, sConstraintBreakData* breakable, sConstraintMotorData* motorData)
+sPhysicsConstraints* CreateLimitedHingeConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 povit, spVec3 axis, float agularLimitMin, float agularLimitMax, sConstraintBreakData* breakable, sConstraintMotorData* motorData, int priority)
 {
 	TRY_BEGIN
 
@@ -228,14 +240,14 @@ sPhysicsConstraints* CreateLimitedHingeConstraint(sPhysicsRigidbody* body, sPhys
 		motor->removeReference();
 	}
 
-	auto instance = CreateConstraint(body->world, body->rigidBody, otherBody == nullptr ? fixedBody : otherBody->rigidBody, data, breakable);
+	auto instance = CreateConstraint(body->world, body->rigidBody, otherBody == nullptr ? fixedBody : otherBody->rigidBody, data, breakable, priority, "LimitedHinge");
 	if (motorData)
 		data->setMotorEnabled(instance->instance->getRuntime(), true);
 	return instance;
 
 	TRY_END(nullptr)
 }
-sPhysicsConstraints* CreateWheelConstraint(sPhysicsRigidbody* wheelRigidBody, sPhysicsRigidbody* chassis, spVec3 povit, spVec3 axle, spVec3 suspension, spVec3 steering, float suspensionLimitMin, float suspensionLimitMax, float suspensionStrength, float suspensionDamping, sConstraintBreakData* breakable)
+sPhysicsConstraints* CreateWheelConstraint(sPhysicsRigidbody* wheelRigidBody, sPhysicsRigidbody* chassis, spVec3 povit, spVec3 axle, spVec3 suspension, spVec3 steering, float suspensionLimitMin, float suspensionLimitMax, float suspensionStrength, float suspensionDamping, sConstraintBreakData* breakable, int priority)
 {
 	TRY_BEGIN
 
@@ -253,11 +265,11 @@ sPhysicsConstraints* CreateWheelConstraint(sPhysicsRigidbody* wheelRigidBody, sP
 	data->setSuspensionStrength(suspensionStrength);
 	data->setSuspensionDamping(suspensionDamping);
 
-	return CreateConstraint(wheelRigidBody->world, chassis->rigidBody, chassis == nullptr ? fixedBody : chassis->rigidBody, data, breakable);
+	return CreateConstraint(wheelRigidBody->world, chassis->rigidBody, chassis == nullptr ? fixedBody : chassis->rigidBody, data, breakable, priority, "Wheel");
 
 	TRY_END(nullptr)
 }
-sPhysicsConstraints* CreatePulleyConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 bodyPivot0, spVec3 bodyPivots1, spVec3 worldPivots0, spVec3 worldPivots1, float leverageRatio, sConstraintBreakData* breakable)
+sPhysicsConstraints* CreatePulleyConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 bodyPivot0, spVec3 bodyPivots1, spVec3 worldPivots0, spVec3 worldPivots1, float leverageRatio, sConstraintBreakData* breakable, int priority)
 {
 	TRY_BEGIN
 
@@ -269,11 +281,11 @@ sPhysicsConstraints* CreatePulleyConstraint(sPhysicsRigidbody* body, sPhysicsRig
 	auto data = new hkpPulleyConstraintData();
 	data->setInWorldSpace(body->rigidBody->getTransform(), otherBody == nullptr ? fixedBody->getTransform() : otherBody->rigidBody->getTransform(), Vec3TohkVec4(bodyPivot0), Vec3TohkVec4(bodyPivots1), Vec3TohkVec4(worldPivots0), Vec3TohkVec4(worldPivots1), leverageRatio);
 
-	return CreateConstraint(body->world, body->rigidBody, otherBody == nullptr ? fixedBody : otherBody->rigidBody, data, breakable);
+	return CreateConstraint(body->world, body->rigidBody, otherBody == nullptr ? fixedBody : otherBody->rigidBody, data, breakable, priority, "Pulley");
 
 	TRY_END(nullptr)
 }
-sPhysicsConstraints* CreatePrismaticConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 povit, spVec3 axis, int allowRotationAroundAxis, float mmax, float mmin, float mag, sConstraintBreakData* breakable, sConstraintMotorData* motorData)
+sPhysicsConstraints* CreatePrismaticConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 povit, spVec3 axis, int allowRotationAroundAxis, float mmax, float mmin, float mag, sConstraintBreakData* breakable, sConstraintMotorData* motorData, int priority)
 {
 	TRY_BEGIN
 
@@ -295,7 +307,7 @@ sPhysicsConstraints* CreatePrismaticConstraint(sPhysicsRigidbody* body, sPhysics
 		motor->removeReference();
 	}
 
-	auto instance = CreateConstraint(body->world, body->rigidBody, otherBody == nullptr ? fixedBody : otherBody->rigidBody, data, breakable);
+	auto instance = CreateConstraint(body->world, body->rigidBody, otherBody == nullptr ? fixedBody : otherBody->rigidBody, data, breakable, priority, "Prismatic");
 
 	if (motorData)
 		data->setMotorEnabled(instance->instance->getRuntime(), true);
@@ -303,7 +315,7 @@ sPhysicsConstraints* CreatePrismaticConstraint(sPhysicsRigidbody* body, sPhysics
 
 	TRY_END(nullptr)
 }
-sPhysicsConstraints* CreateCogWheelConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 rotationPivotA, spVec3 rotationAxisA, float radiusA, spVec3 rotationPivotB, spVec3 rotationAxisB, float radiusB, sConstraintBreakData* breakable)
+sPhysicsConstraints* CreateCogWheelConstraint(sPhysicsRigidbody* body, sPhysicsRigidbody* otherBody, spVec3 rotationPivotA, spVec3 rotationAxisA, float radiusA, spVec3 rotationPivotB, spVec3 rotationAxisB, float radiusB, sConstraintBreakData* breakable, int priority)
 {
 	TRY_BEGIN
 		CHECK_PARAM_PTR(otherBody)
@@ -314,7 +326,7 @@ sPhysicsConstraints* CreateCogWheelConstraint(sPhysicsRigidbody* body, sPhysicsR
 	auto data = new hkpCogWheelConstraintData();
 	data->setInWorldSpace(body->rigidBody->getTransform(), otherBody->rigidBody->getTransform(), Vec3TohkVec4(rotationPivotA), Vec3TohkVec4(rotationAxisA), radiusA, Vec3TohkVec4(rotationPivotB), Vec3TohkVec4(rotationAxisB), radiusB);
 
-	return CreateConstraint(body->world, body->rigidBody, otherBody->rigidBody, data, breakable);
+	return CreateConstraint(body->world, body->rigidBody, otherBody->rigidBody, data, breakable, priority, "CogWheel");
 
 	TRY_END(nullptr)
 }
